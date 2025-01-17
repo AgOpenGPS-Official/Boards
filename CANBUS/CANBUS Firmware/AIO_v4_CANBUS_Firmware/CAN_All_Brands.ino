@@ -43,7 +43,8 @@ if (Brand == 3){
   }   
 if (Brand == 4){
   V_Bus.setFIFOFilter(0, 0x0CACAB13, EXT);  //JCB Curve Data & Valve State Message
-  V_Bus.setFIFOFilter(1, 0x18EFAB27, EXT);  //JCB engage message
+  V_Bus.setFIFOFilter(1, 0x0CEFAB27, EXT);  //JCB engage message icon
+  V_Bus.setFIFOFilter(2, 0x18EFAB27, EXT);  //JCB engage message
   CANBUS_ModuleID = 0xAB;
   }
 if (Brand == 5){
@@ -458,7 +459,16 @@ void VBus_Receive()
                 steeringValveReady = (VBusReceiveData.buf[2]); 
             }
 
-            //**Engage Message**
+            //**Engage Message** ICON
+            if (VBusReceiveData.id == 0x0CEFAB27)
+            {
+                if ((VBusReceiveData.buf[0])== 15 && (VBusReceiveData.buf[1])== 96 && (VBusReceiveData.buf[2])== 1)
+                {
+                    CAN_Engage();    
+                }
+            } 
+
+            //**Engage Message pre ICON**
             if (VBusReceiveData.id == 0x18EFAB27)
             {
                 if ((VBusReceiveData.buf[0])== 15 && (VBusReceiveData.buf[1])== 96 && (VBusReceiveData.buf[2])== 1)
