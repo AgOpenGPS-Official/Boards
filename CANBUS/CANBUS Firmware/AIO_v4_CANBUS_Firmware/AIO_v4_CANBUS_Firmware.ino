@@ -311,7 +311,12 @@ boolean intendToSteer = 0;        //Do We Intend to Steer?
 
   //speed sent as *10
   float gpsSpeed = 0;
-  
+
+  //Speed pulse output
+  elapsedMillis speedPulseUpdateTimer = 0;
+  byte velocityPWM_Pin = 36;      // Velocity (MPH speed) PWM pin 
+  elapsedMillis gpsSpeedUpdateTimer = 0;
+
   //steering variables
   float steerAngleActual = 0;
   float steerAngleSetPoint = 0; //the desired angle from AgOpen
@@ -859,7 +864,33 @@ boolean intendToSteer = 0;        //Do We Intend to Steer?
           //Serial.println("UDP Data Avalible"); 
           udpSteerRecv(packetSize);
         }
-
+	  
+        // Speed pulse
+        if (gpsSpeedUpdateTimer < 1000)
+        {
+            if (speedPulseUpdateTimer > 200) // 100 (10hz) seems to cause tone lock ups occasionally
+            {
+                speedPulseUpdateTimer = 0;
+      
+                //130 pp meter, 3.6 kmh = 1 m/sec = 130hz or gpsSpeed * 130/3.6 or gpsSpeed * 36.1111
+                //gpsSpeed = ((float)(autoSteerUdpData[5] | autoSteerUdpData[6] << 8)) * 0.1;
+                float speedPulse = gpsSpeed * 36.1111;
+      
+                //Serial.print(gpsSpeed); Serial.print(" -> "); Serial.println(speedPulse);
+      
+                if (gpsSpeed > 0.11) { // 0.10 wasn't high enough
+                    tone(velocityPWM_Pin, uint16_t(speedPulse));
+                }
+                else {
+                    noTone(velocityPWM_Pin);
+                }
+            }
+        }
+        else  // if gpsSpeedUpdateTimer hasn't update for 1000 ms, turn off speed pulse
+        {
+            noTone(velocityPWM_Pin);
+        }
+	  
         if (encEnable)
         {
           thisEnc = digitalRead(REMOTE_PIN);
@@ -885,7 +916,7 @@ void udpSteerRecv(int sizeToRead)
     if (udpData[3] == 0xFE)  //254
     {
       gpsSpeed = ((float)(udpData[5] | udpData[6] << 8))*0.1;
-
+	gpsSpeedUpdateTimer = 0;
       guidanceStatus = udpData[7];
       
       //Bit 8,9    set point steer angle * 100 is sent
