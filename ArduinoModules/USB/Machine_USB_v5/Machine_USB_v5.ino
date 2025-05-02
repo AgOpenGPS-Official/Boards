@@ -270,6 +270,7 @@
               {
                   tramline = 255 - tramline;
                   relayLo = 255 - relayLo;
+                  relayHi = 255 - relayHi;
               }
 
               //Bit 13 CRC
