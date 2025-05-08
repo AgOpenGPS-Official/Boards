@@ -3,14 +3,9 @@
     * This program only turns the relays for section control
     * On and Off. Connect to the Relay Port in AgOpenGPS
     * 
-    * Hydraulic Raise D4
-    * Hydraulic Lower D3
-    * 
-    * Tram Right Side D5
-    * Tram left Side D6
-    * 
-    * Section 0 to 5 -- D7 to D12
-    * 
+    * Configure the pin functions in AgOpenGPS Configuration
+    * Logical pins 1 to 10 as listed in AgOpenGPS are wired to Arduino pins D13, D5 to D12, D4
+    * If you need more outputs, you'll need to edit the code.
     */
     
   //loop time variables in microseconds
@@ -36,17 +31,18 @@
     };  Config aogConfig;   //4 bytes
 
     /*
-    * Functions as below assigned to pins
-    0: -
+    * Functions as below assigned to pins, as seen as pin settings in AOG configuration window. The numbers correspond
+    *   to the items in the dropdown list.
+    0: - (disabled/unused)
     1 thru 16: Section 1,Section 2,Section 3,Section 4,Section 5,Section 6,Section 7,Section 8, 
                 Section 9, Section 10, Section 11, Section 12, Section 13, Section 14, Section 15, Section 16, 
-    17,18    Hyd Up, Hyd Down, 
-    19 Tramline, 
-    20: Geo Stop
-    21,22,23 - unused so far
+    17,18:   Hyd Up, Hyd Down,
+    19,20:   Tramline right, left
+    21:      Geo Stop
+    22,23 - unused so far
     */
 
-    //24 possible pins assigned to these functions
+    //24 possible pins assigned to these functions. Default is pins 1-3 = sections 1-3.
     uint8_t pin[] = { 1,2,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 
     //read value from Machine data and set 1 or zero according to list
@@ -137,8 +133,9 @@
               serialResetTimer = 0;
           }
 
-          if (watchdogTimer > 12)
+          if (watchdogTimer > 12) // no serial comms received for more than 12*LOOP_TIME
           {
+            // then activate all relays, taking into consideration whether the relays are inverted or not.
             if (aogConfig.isRelayActiveHigh) {
                 relayLo = 255;
                 relayHi = 255;
@@ -266,10 +263,11 @@
               relayLo = Serial.read();          // read relay control from AgOpenGPS
               relayHi = Serial.read();
 
-              if (aogConfig.isRelayActiveHigh)
+              if (aogConfig.isRelayActiveHigh) // if relays are active high, invert the bits we got from AgOpenGPS
               {
                   tramline = 255 - tramline;
                   relayLo = 255 - relayLo;
+                  relayHi = 255 - relayHi;
               }
 
               //Bit 13 CRC
@@ -367,6 +365,16 @@
       //GeoStop
       relayState[20] =  (geoStop == 0) ? 0 : 1;
 
+       /*
+        * if pin[n] is enabled, i.e. doesn't have the function set to 0
+        * (remember, 1-16 are sections, 17,18 are hydraulics, etc.)
+        *
+        * break down of digitalWrite(13, relayState[pin[0]-1]):
+        * pin[0] gets the function of the pin, -1 makes the section number zero-referenced since relayState is zero-referenced.
+        * i.e. if pin[0] is section 1, we actually need to look at relayState[0] to get the state of section 1.
+        * then we use digitalWrite to set the pin to what we need, in this example the 13th digital pin.
+        *
+        */
       if (pin[0]) digitalWrite(13, relayState[pin[0]-1]);
       if (pin[1]) digitalWrite(5, relayState[pin[1]-1]);
       if (pin[2]) digitalWrite(6, relayState[pin[2]-1]);
