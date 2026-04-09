@@ -28,9 +28,15 @@
 // Serial Ports
 #define SerialAOG Serial                //AgIO USB conection
 #define SerialRTK Serial3               //RTK radio
-HardwareSerial* SerialGPS = &Serial7;   //Main postion receiver (GGA)
-HardwareSerial* SerialGPS2 = &Serial2;  //Dual heading receiver 
-HardwareSerial* SerialIMU = &Serial5;   //IMU BNO-085
+#if defined(__IMXRT1062__)
+  HardwareSerialIMXRT* SerialGPS = &Serial7; //Main postion receiver (GGA)
+  HardwareSerialIMXRT* SerialGPS2 = &Serial2; //Dual heading receiver
+  HardwareSerialIMXRT* SerialIMU = &Serial5; //IMU
+#else
+  HardwareSerial* SerialGPS = &Serial7;
+  HardwareSerial* SerialGPS2 = &Serial2;
+  HardwareSerial* SerialIMU = &Serial5;
+#endif
 
 constexpr int serial_buffer_size = 512;
 
